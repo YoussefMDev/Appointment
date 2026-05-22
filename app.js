@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const xss = require('xss-clean');
+// const xss = require('xss-clean');
 const hpp = require('hpp');
 
 const connectDB = require('./config/database');
@@ -38,7 +38,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 app.use(express.json({ limit: '30kb' }));
-app.use(xss());
+// app.use(xss());
 app.use(hpp({ whitelist: ['specialization', 'averageRating', 'sort', 'fields'] }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

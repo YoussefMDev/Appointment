@@ -8,8 +8,7 @@ const sendEmail = require('../utils/sendEmail');
 const AppError = require('../utils/appError');
 
 exports.registerUser = expressAsyncHandler(async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  
 
   const { name, email, password } = req.body;
   const user = await User.create({ name, email, password });
@@ -18,8 +17,7 @@ exports.registerUser = expressAsyncHandler(async (req, res, next) => {
 });
 
 exports.loginUser = expressAsyncHandler(async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  
 
   const { email, password } = req.body;
   const user = await User.findOne({ email }).select('+password');

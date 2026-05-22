@@ -6,11 +6,26 @@ const AppError = require('../utils/appError');
 
 // 1. Get all doctors (Read)
 exports.getAllDoctors = expressAsyncHandler(async (req, res, next) => {
-  const features = new APIFeatures(Doctor.find(), req.query).filter().sort().limitFields().paginate();
-  const doctors = await features.query;
-  res.status(200).json({ status: 'success', results: doctors.length, data: { doctors } });
-});
+  
+  const queryObj = { ...req.query };
 
+  // 2) بناء الـ Query وتشغيل الميزات المتقدمة (Filtering, Sorting, Limiting, Pagination)
+  const features = new APIFeatures(Doctor.find().populate('reviews'), queryObj)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
+
+  // 3) تنفيذ الـ Query النهائي وجلب البيانات من قاعدة البيانات
+  const doctors = await features.query;
+
+  // 4) إرسال الـ Response بنجاح للمستخدم
+  res.status(200).json({ 
+    status: 'success', 
+    results: doctors.length, 
+    data: { doctors } 
+  });
+});
 // 2. Get single doctor (Read)
 exports.getDoctorById = expressAsyncHandler(async (req, res, next) => {
   const doctor = await Doctor.findById(req.params.id).populate('reviews');

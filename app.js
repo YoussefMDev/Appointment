@@ -48,7 +48,7 @@ app.use('/api/v1/doctors', require('./Routes/doctorRoutes'));
 app.use('/api/v1/appointments', require('./Routes/appointmentRoutes'));
 app.use('/api/v1/reviews', require('./Routes/reviewRoutes'));
 app.use('/api/v1/admin', require('./Routes/adminRoutes'));
-app.use('/api/v1/doctor-dashboard', require('./Routes+/doctorDashboardRoutes'));
+app.use('/api/v1/doctor-dashboard', require('./Routes/doctorDashboardRoutes'));
 
 // الحل البرنس: استخدام Regular Expression مباشرة
 app.all(/.*/, (req, res, next) => {

@@ -1,17 +1,19 @@
 // --- utils/apiFeatures.js ---
 class APIFeatures {
-  constructor(query, queryString) {
+constructor(query, queryString) {
     this.query = query;
-    this.queryString = queryString;
+    // 🔴 التعديل السحري: خذ نسخة هنا كمان لتأمين الكلاس تماماً في الـ Serverless
+    this.queryString = { ...queryString }; 
   }
 
   filter() {
     const queryObj = { ...this.queryString };
-    const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach(el => delete queryObj[el]);
+    const excludeFields = ['page', 'sort', 'limit', 'fields'];
+    excludeFields.forEach((el) => delete queryObj[el]);
 
+    // باقي كود الـ filter...
     let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 
     this.query = this.query.find(JSON.parse(queryStr));
     return this;

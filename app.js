@@ -19,6 +19,8 @@ connectDB();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.post('/webhook-checkout', 
 express.raw({ type: 'application/json' }), 
 handleStripeWebhook

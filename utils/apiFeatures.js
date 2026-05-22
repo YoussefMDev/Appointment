@@ -1,8 +1,7 @@
-// --- utils/apiFeatures.js ---
 class APIFeatures {
-constructor(query, queryString) {
+  constructor(query, queryString) {
     this.query = query;
-    // 🔴 التعديل السحري: خذ نسخة هنا كمان لتأمين الكلاس تماماً في الـ Serverless
+    // ✅ الحل السحري: بناخد نسخة منفصلة تماماً في الـ Memory عشان نفصل صلتها بـ Vercel
     this.queryString = { ...queryString }; 
   }
 
@@ -11,7 +10,7 @@ constructor(query, queryString) {
     const excludeFields = ['page', 'sort', 'limit', 'fields'];
     excludeFields.forEach((el) => delete queryObj[el]);
 
-    // باقي كود الـ filter...
+    // تصفية متقدمة (gte, gt, lte, lt)
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 

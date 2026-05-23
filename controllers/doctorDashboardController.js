@@ -22,17 +22,45 @@ exports.getMyProfile = expressAsyncHandler(async (req, res, next) => {
 });
 
 exports.updateMyProfile = expressAsyncHandler(async (req, res, next) => {
-  const doctorProfileId = req.user.doctorProfile;
-  if (!doctorProfileId) return next(new AppError('No doctor profile linked to this account', 404));
+  // 1) تجهيز البيانات القادمة من الـ request body
+  const updateData = {
+    bio: req.body.bio,
+    specialization: req.body.specialization,
+    price: req.body.price,
+    // أي حقول تانية خاصة بالدكتور...
+  };
 
-  const filteredBody = filterObj(req.body, 'bio', 'specialization', 'clinicAddress', 'price');
+  let updatedDoctor;
 
-  if (req.files && req.files.length > 0) {
-    filteredBody.gallery = req.files.map(file => `/uploads/${file.filename}`);
+  // 2) السيناريو الأول: الدكتور معندوش بروفايل أصلاً (null) -> هنكاريته لأول مرة
+  if (!req.user.doctorProfile) {
+    // ننشئ مستند جديد في كوليكشن الـ Doctors ونربطه بـ ID المستخدم الحالي
+    updatedDoctor = await Doctor.create({
+      user: req.user._id,
+      ...updateData
+    });
+
+    // نحدث مستند الـ User الحالي عشان يشيل الـ ID بتاع بروفايل الدكتور الجديد
+    await User.findByIdAndUpdate(req.user._id, {
+      doctorProfile: updatedDoctor._id
+    });
+
+  } else {
+    // 3) السيناريو الثاني: الدكتور عنده بروفايل فعلاً -> هنعمل Update طبيعي
+    updatedDoctor = await Doctor.findByIdAndUpdate(
+      req.user.doctorProfile,
+      updateData,
+      { new: true, runValidators: true }
+    );
   }
 
-  const updatedDoctor = await Doctor.findByIdAndUpdate(doctorProfileId, filteredBody, { new: true, runValidators: true });
-  res.status(200).json({ status: 'success', data: updatedDoctor });
+  // 4) الـ Response النظيف
+  res.status(200).json({
+    status: 'success',
+    data: {
+      doctor: updatedDoctor
+    }
+  });
 });
 
 exports.updateMyAvailability = expressAsyncHandler(async (req, res, next) => {

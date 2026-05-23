@@ -26,7 +26,7 @@ exports.loginUser = expressAsyncHandler(async (req, res, next) => {
     return next(new AppError('Incorrect email or password', 401));
   }
 
-  res.status(200).json({ status: 'success', token: generateToken(user._id), data: { user } });
+  res.status(200).json({ status: 'success', tزضoken: generateToken(user._id), data: { user } });
 });
 
 exports.forgotPassword = expressAsyncHandler(async (req, res, next) => {

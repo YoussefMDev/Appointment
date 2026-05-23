@@ -1,6 +1,7 @@
 // --- controllers/doctorDashboardController.js ---
 const Doctor = require('../models/doctorModel');
 const Appointment = require('../models/appointmentModel');
+const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const expressAsyncHandler = require('express-async-handler');
 
@@ -22,26 +23,29 @@ exports.getMyProfile = expressAsyncHandler(async (req, res, next) => {
 });
 
 exports.updateMyProfile = expressAsyncHandler(async (req, res, next) => {
-  // 1) تجهيز البيانات القادمة من الـ request body
+  // 1) تجهيز البيانات النصية
   const updateData = {
-    name:req.body.name,
+    name: req.body.name,
     bio: req.body.bio,
     specialization: req.body.specialization,
     price: req.body.price,
-    // أي حقول تانية خاصة بالدكتور...
   };
+
+  // 📸 لو الدكتور رفع صور في الـ gallery، بنحول مسارها ونخزنها في مصفوفة
+  if (req.files && req.files.length > 0) {
+    updateData.gallery = req.files.map(file => file.path || file.filename);
+  }
 
   let updatedDoctor;
 
   // 2) السيناريو الأول: الدكتور معندوش بروفايل أصلاً (null) -> هنكاريته لأول مرة
   if (!req.user.doctorProfile) {
-    // ننشئ مستند جديد في كوليكشن الـ Doctors ونربطه بـ ID المستخدم الحالي
     updatedDoctor = await Doctor.create({
       user: req.user._id,
       ...updateData
     });
 
-    // نحدث مستند الـ User الحالي عشان يشيل الـ ID بتاع بروفايل الدكتور الجديد
+    // تحديث مستند الـ User (دلوقتي هيشتغل لأننا عملنا require فوق)
     await User.findByIdAndUpdate(req.user._id, {
       doctorProfile: updatedDoctor._id
     });
@@ -55,7 +59,7 @@ exports.updateMyProfile = expressAsyncHandler(async (req, res, next) => {
     );
   }
 
-  // 4) الـ Response النظيف
+  // 4) الـ Response الناجح
   res.status(200).json({
     status: 'success',
     data: {

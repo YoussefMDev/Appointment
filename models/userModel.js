@@ -15,11 +15,13 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: Date,
 }, { timestamps: true });
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+userSchema.pre('save', async function() {
+  // لو الباسورد متعدلش، اخرج فوراً من الدالة (Mongoose هيفهم لوحده وينقل على الخطوة اللي بعدها)
+  if (!this.isModified('password')) return;
+  
+  // تشفير الباسورد
+  const bcrypt = require('bcryptjs'); // أو حسب المكتبة اللي مستخدمها
+  this.password = await bcrypt.hash(this.password, 12);
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {

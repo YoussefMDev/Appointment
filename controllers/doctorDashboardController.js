@@ -24,6 +24,7 @@ exports.getMyProfile = expressAsyncHandler(async (req, res, next) => {
 exports.updateMyProfile = expressAsyncHandler(async (req, res, next) => {
   // 1) تجهيز البيانات القادمة من الـ request body
   const updateData = {
+    name:req.body.name,
     bio: req.body.bio,
     specialization: req.body.specialization,
     price: req.body.price,

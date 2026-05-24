@@ -30,9 +30,17 @@ exports.updateMe = expressAsyncHandler(async (req, res, next) => {
 });
 
 // 3. Deactivate current user account (Delete - Self)
+// ✅ الكود الصحيح والآمن لدالة deleteMe جوه controllers/userController.js
 exports.deleteMe = expressAsyncHandler(async (req, res, next) => {
-  await User.findByIdAndUpdate(req.user.id, { active: false });
-  res.status(204).json({ status: 'success', data: null });
+  // 1) بنجيب الـ ID من الـ Token اللي جاي من ميدياوير الـ protect (يعني req.user._id)
+  // كدة مستحيل أي يوزر يقفل حساب حد تاني، وبيتحكم في نفسه بس مهما كان الـ Role بتاعه
+  await User.findByIdAndUpdate(req.user._id, { active: false });
+
+  // 2) نرجع استجابة ناجحة للمستخدم
+  res.status(204).json({
+    status: 'success',
+    data: null
+  });
 });
 
 // --- ADMIN CRUD OPERATIONS ---

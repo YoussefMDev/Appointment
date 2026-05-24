@@ -1,5 +1,6 @@
 // --- controllers/authController.js ---
 const User = require('../models/userModel');
+const Doctor = require('../models/doctorModel');
 const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const expressAsyncHandler = require('express-async-handler');
@@ -8,12 +9,30 @@ const sendEmail = require('../utils/sendEmail');
 const AppError = require('../utils/appError');
 
 exports.registerUser = expressAsyncHandler(async (req, res, next) => {
+  const { name, email, password, role } = req.body;
   
+  // 1) تكريت المستخدم في كوليكشن الـ Users
+  const user = await User.create({ name, email, password, role });
+  
+  // 🩺 2) لو الـ Role اللي مبعوتة هي doctor، بنكريت له بروفايل دكتور فوراً
+  if (role === 'doctor') {
+    const newDoctorProfile = await Doctor.create({
+      user: user._id,
+      name: user.name, // بنمرر الاسم المبدئي
+      specialization: 'General', // قيمة افتراضية لحد ما يعدلها
+      price: 100 // قيمة افتراضية
+    });
 
-  const { name, email, password } = req.body;
-  const user = await User.create({ name, email, password });
+    // نربط الـ Profile ID اللي اتكريت جوه مستند الـ User
+    user.doctorProfile = newDoctorProfile._id;
+    await user.save({ validateBeforeSave: false });
+  }
   
-  res.status(201).json({ status: 'success', token: generateToken(user._id), data: { user } });
+  res.status(201).json({ 
+    status: 'success', 
+    token: generateToken(user._id), 
+    data: { user } 
+  });
 });
 
 exports.loginUser = expressAsyncHandler(async (req, res, next) => {

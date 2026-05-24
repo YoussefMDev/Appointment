@@ -55,6 +55,6 @@ exports.deleteReview = expressAsyncHandler(async (req, res, next) => {
     return next(new AppError('You are not authorized to delete this review', 403));
   }
 
-  await review.remove();
+  await review.deleteOne();
   res.status(204).json({ status: 'success', data: null });
 });

@@ -18,7 +18,7 @@ exports.getAppointment = expressAsyncHandler(async (req, res, next) => {
   res.status(200).json({ status: 'success', data: { appointment } });
 });
 
-// 3. Create appointment manually (Create - Admin or Cash payment)
+// 3. Create appointment manually (Create - Admin Card or Cash payment)
 exports.createAppointment = expressAsyncHandler(async (req, res, next) => {
   const appointment = await Appointment.create(req.body);
   res.status(201).json({ status: 'success', data: { appointment } });
@@ -43,7 +43,8 @@ exports.bookAppointment = expressAsyncHandler(async (req, res, next) => {
   const { doctorId, appointmentDate, timeSlot, paymentMethod } = req.body;
 
   // 1. Get doctor details
-  const doctor = await Doctor.findById(doctorId);
+  const doctor = await Doctor.findById(req.body.doctor).lean();
+  console.log("Mongoose Found Doctor:", doctor);
   if (!doctor) return next(new AppError('Doctor not found', 404));
   const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
   // 2. Check Availability (Is the doctor working on this day/time?)
@@ -71,7 +72,7 @@ exports.bookAppointment = expressAsyncHandler(async (req, res, next) => {
   if (paymentMethod === 'cash') {
     const appointment = await Appointment.create({
       patient: req.user.id,
-      doctor: doctorId,
+      doctor: req.body.doctor,
       appointmentDate,
       timeSlot,
       price: doctor.price,
@@ -116,7 +117,8 @@ exports.bookAppointment = expressAsyncHandler(async (req, res, next) => {
     return res.status(200).json({ 
       status: 'success', 
       message: 'Please complete the payment using the provided session URL.',
-      sessionUrl: session.url 
+      sessionUrl: session.url,
+      appointmentId: appointment._id 
     });
   }
 
@@ -183,7 +185,96 @@ exports.handleStripeWebhook = expressAsyncHandler(async (req, res, next) => {
   res.status(200).json({ received: true });
 });
 
+// 🔹 1) جلب الحجوزات الخاصة بالمريض الحالي
+exports.getMyAppointments = expressAsyncHandler(async (req, res, next) => {
+  // بنجيب الحجوزات اللي فيها الـ patient بيساوي الـ ID بتاع المريض المسجل دخول
+  const appointments = await Appointment.find({ patient: req.user._id })
+    .populate('doctor', 'name specialization price') // بنعمل populate لبيانات الدكتور عشان تظهر للمريض
+    .sort('-appointmentDate'); // الترتيب من الأحدث للأقدم
 
+  res.status(200).json({
+    status: 'success',
+    results: appointments.length,
+    data: { appointments }
+  });
+});
+
+// 🔹 2) إلغاء الحجز من طرف المريض
+exports.cancelAppointmentByPatient = expressAsyncHandler(async (req, res, next) => {
+  // بنبص على الحجز بالـ ID بتاعه، ولازم يكون تبع المريض الحالي
+  const appointment = await Appointment.findOne({
+    _id: req.params.id,
+    patient: req.user._id
+  });
+
+  if (!appointment) {
+    return next(new AppError('No appointment found with this ID or you do not have permission', 404));
+  }
+
+  // حماية: لو الحجز مخلص أو ملغي قبل كدة ميتلغيش تاني
+  if (['completed', 'cancelledByUser', 'cancelledByDoctor'].includes(appointment.status)) {
+    return next(new AppError(`Cannot cancel an appointment that is already ${appointment.status}`, 400));
+  }
+
+  // تغيير الحالة لـ ملغي بواسطة المستخدم
+  appointment.status = 'cancelledByUser';
+  await appointment.save();
+
+  // 💡 هنا مستقبلاً لو الدفع كارت (Stripe) بتنادي دالة الـ Refund الـ أنت مجهزها
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Appointment cancelled successfully',
+    data: { appointment }
+  });
+});
+
+// 🔹 3) تعديل موعد الحجز (تغيير التاريخ أو الـ Time Slot)
+exports.updateAppointmentDateTime = expressAsyncHandler(async (req, res, next) => {
+  const { appointmentDate, timeSlot } = req.body;
+
+  if (!appointmentDate || !timeSlot) {
+    return next(new AppError('Please provide a new appointment date and time slot', 400));
+  }
+
+  // البحث عن الحجز والتأكد إنه يخص المريض الحالي
+  const appointment = await Appointment.findOne({
+    _id: req.params.id,
+    patient: req.user._id
+  });
+
+  if (!appointment) {
+    return next(new AppError('No appointment found with this ID or you do not have permission', 404));
+  }
+
+  // حماية: ميعاد الحجز ميتعدلش لو اتلغى أو خلص
+  if (appointment.status !== 'pending' && appointment.status !== 'confirmed') {
+    return next(new AppError('Cannot reschedule a completed or cancelled appointment', 400));
+  }
+
+  // حماية لمنع التعارض (نفس الدكتور ونفس الوقت):
+  const conflict = await Appointment.findOne({
+    doctor: appointment.doctor,
+    appointmentDate: new Date(appointmentDate),
+    timeSlot: timeSlot,
+    status: { $in: ['pending', 'confirmed'] } // التعارض يحصل لو فيه حجز قائم فعلاً
+  });
+
+  if (conflict) {
+    return next(new AppError('This time slot is already booked for this doctor. Choose another one.', 400));
+  }
+
+  // تحديث البيانات
+  appointment.appointmentDate = appointmentDate;
+  appointment.timeSlot = timeSlot;
+  await appointment.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Appointment rescheduled successfully',
+    data: { appointment }
+  });
+});
 
 // // 7. Stripe Checkout Session (Online Payment)
 // exports.createAppointmentCheckoutSession = expressAsyncHandler(async (req, res, next) => {

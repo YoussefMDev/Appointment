@@ -20,6 +20,16 @@ const doctorSchema = new mongoose.Schema({
   averageRating: { type: Number, default: 0 },
   numberOfReviews: { type: Number, default: 0 },
   availableSlots: [availabilitySchema]
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true } 
+});
+
+doctorSchema.virtual('reviews', {
+  ref: 'Review',          // اسم موديل التقييمات عندك بالظبط في الـ Schema (غالباً Review)
+  foreignField: 'doctor', // اسم الحقل الجوه موديل الـ Review اللي شايل الـ ID بتاع الدكتور
+  localField: '_id'       // الـ ID بتاع الدكتور الحالي اللي هيربط بيه
+});
 
 module.exports = mongoose.model('Doctor', doctorSchema);

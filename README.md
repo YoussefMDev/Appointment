@@ -11,9 +11,9 @@ A robust and secure RESTful API built with **Node.js**, **Express.js**, and **Mo
 ## API Testing Screenshots (Postman)
 Below are the verified test results showing successful API responses:
 
-### 1. Booking an Appointment (201 Created)
-(رابط_صورة_الحجز_الناجح)
+### 1. Booking an Appointment (201 Created))
 <img width="1438" height="932" alt="image" src="https://github.com/user-attachments/assets/797eaa11-8d03-4356-8d33-b67c15a6cd38" />
 
 ### 2. User Profile Updated Successfully (200 OK)
-![Update Profile Screenshot](رابط_صورة_التعديل_الناجح)
+<img width="1446" height="956" alt="image" src="https://github.com/user-attachments/assets/83c21e6f-7edc-413c-8824-d83fa203e5b5" />
+
